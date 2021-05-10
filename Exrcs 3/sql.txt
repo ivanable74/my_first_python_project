@@ -1,0 +1,59 @@
+(1)
+SELECT DISTINCT c.CustomerId, c.FirstName || " " ||c.LastName as Name, c.Phone, c.Company
+FROM Customer AS c
+	JOIN Invoice as I ON c.CustomerId = i.CustomerId
+	JOIN Employee ON c.SupportRepId = Employee.EmployeeId
+	JOIN InvoiceLine ON I.InvoiceId = InvoiceLine.InvoiceId
+	JOIN Track on InvoiceLine.TrackId = Track.TrackId
+	JOIN Genre on Genre.GenreId = Track.GenreId
+		WHERE Employee.BirthDate >= DATE('now', '-50 years') and Genre.Name <> "Rock"
+ORDER BY c.City ASC, c.Email DESC
+LIMIT 10
+
+(2)
+SELECT e.FirstName || ' ' || e.LastName AS FullName, e.Phone, e1.FirstName || ' ' || e1.LastName AS LeaderFullName, e1.Phone as LeaderPhone
+FROM Employee AS e
+	JOIN Employee AS e1 ON e1.EmployeeId = e.ReportsTo
+
+(3)
+SELECT DISTINCT c.FirstName, c.Phone
+FROM Customer c 
+JOIN Invoice I ON c.CustomerId = I.CustomerId
+JOIN InvoiceLine IL ON I.InvoiceId = IL.InvoiceId
+JOIN Track T ON IL.TrackId=T.TrackId
+	WHERE IL.UnitPrice = (
+        SELECT MAX(UnitPrice)
+		FROM InvoiceLine)
+ORDER BY c.FirstName
+
+(4)
+SELECT DISTINCT c.FirstName || ' ' || c.LastName AS FullName, c.Phone
+FROM Customer C
+	INNER JOIN Invoice I ON I.CustomerId = C.CustomerId
+	WHERE I.total > 0 AND C.City IN (
+        SELECT C.City
+		FROM Customer C
+        GROUP BY (C.City)
+        HAVING count(C.City) > 1)
+
+(5)
+SELECT I.BillingCity
+FROM Invoice I
+GROUP BY I.BillingCity
+ORDER BY SUM(I.total) DESC
+LIMIT 3
+
+(6)
+SELECT DISTINCT Genre.Name, Track.Name, Album.Title, Artist.Name FROM Track
+JOIN Genre on Track.GenreId = (
+	SELECT Genre.GenreId
+	WHERE Genre.Name=(
+		SELECT Genre.Name
+		FROM Track
+		LEFT JOIN InvoiceLine on InvoiceLine.TrackId=Track.TrackId
+		LEFT JOIN Genre on Genre.GenreId=Track.GenreId
+		GROUP BY Genre.Name
+		ORDER by count() DESC
+		LIMIT 1))
+JOIN Album on Album.AlbumId=Track.AlbumId
+JOIN Artist on Artist.ArtistId=Album.ArtistId
